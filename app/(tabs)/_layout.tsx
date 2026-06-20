@@ -26,8 +26,22 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: 'Add Returns',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus.rectangle.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tracking"
+        options={{
+          title: 'Tracking',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
         }}
       />
     </Tabs>
