@@ -38,7 +38,17 @@ export default function TabTwoScreen() {
   }, []);
 
   //  ML result state + API key
-  const [result, setResult] = useState(null);
+
+  type ScanResult = {
+  label?: string;
+  confidence?: number;
+  condition_code?: string;
+  reason_code?: string;
+  error?: string;
+  raw?: any;
+  };
+
+  const [result, setResult] = useState<ScanResult | null>(null);
   const HF_API_KEY = process.env.EXPO_PUBLIC_HF_API_KEY;
 
   //  Scan logic
@@ -52,6 +62,10 @@ export default function TabTwoScreen() {
     if (pick.canceled) return;
 
     const base64 = pick.assets[0].base64;
+    if (!base64) {
+      console.log("No base64 data found");
+      return;
+    }
 
     // #2 Upload to SupaBase Storage
     // Convert base64 to a Blob
@@ -96,18 +110,30 @@ export default function TabTwoScreen() {
     const image_id = imageRow.image_id;
 
     // #4 Run ML Model
-    console.log("HF_API_KEY:", HF_API_KEY);   // <‑‑ PUT IT RIGHT HERE
+    console.log("HF_API_KEY:", HF_API_KEY);   // <‑‑ PUT IT RIGHT HERE    
+
+    const binary = Buffer.from(base64, "base64");
+    const uint8 = new Uint8Array(binary);
+
+    console.log("Binary length:", uint8.length);
+
     const response = await fetch(
       "https://api-inference.huggingface.co/models/WinKawaks/vit-tiny-patch16-224",
       {
         method: "POST",
         headers: {
           Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/octet-stream",
         },
-        body: JSON.stringify({ inputs: base64 }),
+        body: uint8,
       }
     );
+
+    if (!base64) {
+      console.log("No base64 data found");
+      return;
+    }
+
 
     const predictions = await response.json();
 
@@ -120,7 +146,7 @@ export default function TabTwoScreen() {
     const label = top.label.toLowerCase();
     const confidence = top.score;
 
-    const conditionMap = {
+    const conditionMap: Record<string, string> = {
       damaged: "C01",
       cracked: "C01",
       torn: "C01",
@@ -196,7 +222,7 @@ export default function TabTwoScreen() {
           ) : (
             <>
               <ThemedText>Label: {result.label}</ThemedText>
-              <ThemedText>Confidence: {result.confidence.toFixed(2)}</ThemedText>
+              <ThemedText>Confidence: {result.confidence?.toFixed(2) ?? "N/A"}</ThemedText>
               <ThemedText>Condition Code: {result.condition_code}</ThemedText>
               <ThemedText>Reason Code: {result.reason_code}</ThemedText>
             </>
