@@ -16,7 +16,7 @@ export default function TabTwoScreen() {
       headerImage={
         <IconSymbol
           size={310}
-          color="#808080"
+          color="#676767"
           name="chevron.left.forwardslash.chevron.right"
           style={styles.headerImage}
         />
@@ -30,8 +30,8 @@ export default function TabTwoScreen() {
           Explore
         </ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
+      <ThemedText>This app includes a couple pieces of example code to help you get started.</ThemedText>
+      <Collapsible title="File-based routing from the Expo Router">
         <ThemedText>
           This app has two screens:{' '}
           <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
@@ -100,7 +100,7 @@ export default function TabTwoScreen() {
 
 const styles = StyleSheet.create({
   headerImage: {
-    color: '#808080',
+    color: '#676767',
     bottom: -90,
     left: -35,
     position: 'absolute',
