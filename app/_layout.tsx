@@ -5,6 +5,10 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import { Buffer } from "buffer";
+global.Buffer = Buffer;
+
+
 export const unstable_settings = {
   anchor: '(tabs)',
 };
