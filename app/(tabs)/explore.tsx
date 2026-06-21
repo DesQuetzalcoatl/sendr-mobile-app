@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Button } from 'react-native';
@@ -55,20 +56,36 @@ export default function TabTwoScreen() {
   async function handleScan() {
     // #1 Take photo using camera
     const pick = await ImagePicker.launchCameraAsync({
-      base64: true,
+      base64: false,
       quality: 0.7,
     });
 
     if (pick.canceled) return;
 
-    const base64 = pick.assets[0].base64;
+    // #2 Resize the image to reduce size before uploading BEFORE converting to base64
+    const manipulated = await ImageManipulator.manipulateAsync(
+    pick.assets[0].uri,
+    [{ resize: { width: 512 } }],
+    {
+      compress: 0.7,
+      format: ImageManipulator.SaveFormat.JPEG,
+      base64: true,
+    }
+  );
+
+    const base64 = manipulated.base64;
+
+
     if (!base64) {
       console.log("No base64 data found");
       return;
     }
 
-    // #2 Upload to SupaBase Storage
-    // Convert base64 to a Blob
+    // Log size before uploading or sending
+    console.log("Base64 length:", base64.length);
+    console.log("Approx size MB:", (base64.length * 0.75) / (1024 * 1024));
+
+    // #3 Upload to SupaBase Storage
     const imageData = Buffer.from(base64, "base64");
 
     // Create a unique filename
@@ -110,12 +127,12 @@ export default function TabTwoScreen() {
     const image_id = imageRow.image_id;
 
     // #4 Run ML Model
-    console.log("HF_API_KEY:", HF_API_KEY);   // <‑‑ PUT IT RIGHT HERE    
+    console.log("HF_API_KEY:", HF_API_KEY);  
 
-    const binary = Buffer.from(base64, "base64");
-    const uint8 = new Uint8Array(binary);
-
-    console.log("Binary length:", uint8.length);
+    if (!base64) {
+      console.log("No base64 data found");
+      return;
+    }
 
     const response = await fetch(
       "https://api-inference.huggingface.co/models/WinKawaks/vit-tiny-patch16-224",
@@ -123,17 +140,13 @@ export default function TabTwoScreen() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/octet-stream",
+          "Content-Type": "application/json",
         },
-        body: uint8,
+        body: JSON.stringify({
+          inputs: base64,
+        }),
       }
     );
-
-    if (!base64) {
-      console.log("No base64 data found");
-      return;
-    }
-
 
     const predictions = await response.json();
 
