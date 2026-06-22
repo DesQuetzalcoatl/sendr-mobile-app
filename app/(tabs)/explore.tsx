@@ -108,7 +108,7 @@ export default function TabTwoScreen() {
       .from("scanned-images")
       .getPublicUrl(fileName).data.publicUrl;
 
-    // #3 Insert into scanned_images
+    // #4 Insert into scanned_images
     const { data: imageRow, error: imageInsertError } = await supabase
       .from("scanned_images")
       .insert({
@@ -126,38 +126,70 @@ export default function TabTwoScreen() {
 
     const image_id = imageRow.image_id;
 
-    // #4 Run ML Model
-    console.log("HF_API_KEY:", HF_API_KEY);  
+    // #5 Run ML Model
+    console.log("HF_API_KEY:", HF_API_KEY);
+    fetch('https://httpbin.org/get').then(r => r.json()).then(j => console.log('net ok', j)).catch(e => console.log('net fail', e));
 
     if (!base64) {
       console.log("No base64 data found");
       return;
     }
 
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/WinKawaks/vit-tiny-patch16-224",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: base64,
-        }),
+    let predictions: any[] | null = null;
+
+    try {
+      console.log("FETCH → sending to HF");
+
+      const response = await fetch(
+        "https://router.huggingface.co/hf-inference/models/google/vit-base-patch16-224s",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${HF_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            inputs: base64,
+          }),
+        }
+      );
+
+      console.log("STATUS:", response.status);
+      console.log("HEADERS:", [...response.headers.entries()]);
+
+      const text = await response.text();
+      console.log("BODY:", text);
+
+      try {
+        predictions = JSON.parse(text);
+      } catch (e) {
+        console.log("JSON PARSE ERROR:", e);
+        setResult({ error: "Invalid JSON from model", raw: text });
+        return;
       }
-    );
 
-    const predictions = await response.json();
+      if (!Array.isArray(predictions)) {
+        setResult({ error: "Unexpected model response", raw: predictions });
+        return;
+      }
 
-    if (!Array.isArray(predictions)) {
-      setResult({ error: "Unexpected model response", raw: predictions });
+      if (predictions.length === 0) {
+        setResult({ error: "Empty predictions array", raw: predictions });
+        return;
+      }
+
+      console.log("PREDICTIONS:", predictions);
+
+    } catch (err) {
+      console.log("FETCH ERROR:", err);
       return;
     }
 
+    // ⭐ GUARANTEED SAFE HERE
     const top = predictions[0];
     const label = top.label.toLowerCase();
     const confidence = top.score;
+
 
     const conditionMap: Record<string, string> = {
       damaged: "C01",
